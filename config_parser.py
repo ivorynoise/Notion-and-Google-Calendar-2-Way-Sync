@@ -10,9 +10,12 @@ log = logging.getLogger(__name__)
 
 class ConfigParser(metaclass=Singleton):
     def __init__(self):
+        self._initialized = False
+
         self.NOTION_TOKEN = ""
         self.TASK_DATABASE_ID = ""
         self.URL_ROOT = ""
+        self.SECRET_DIR = ""
         self.TIMEZONE = ""
         self.DEFAULT_EVENT_LENGTH = ""
         self.DEFAULT_START_TIME = ""
@@ -32,6 +35,9 @@ class ConfigParser(metaclass=Singleton):
         self.TASK_DATABASE_ID = notion_cfg['TASK_DATABASE_ID']
         self.URL_ROOT = notion_cfg['URL_ROOT']
 
+        google_cfg = config['GOOGLE']
+        self.SECRET_DIR = google_cfg['SECRET_DIR']
+
         other_cfg = config['OTHERS']
         self.TIMEZONE = other_cfg['TIMEZONE']
         self.DEFAULT_EVENT_LENGTH = other_cfg['DEFAULT_EVENT_LENGTH']
@@ -41,6 +47,11 @@ class ConfigParser(metaclass=Singleton):
         self.DEFAULT_GCALENDAR_ID = other_cfg['DEFAULT_GCALENDAR_ID']
         self.DEFAULT_GCALENDAR_NAME = other_cfg['DEFAULT_GCALENDAR_NAME']
 
+        self._initialized = True
+
+    @property
+    def initialized(self):
+        return self._initialized
 
     def validate(self):
         pass
@@ -50,16 +61,16 @@ class ConfigParser(metaclass=Singleton):
         return self.NOTION_TOKEN
 
     @property
+    def secret_dir(self):
+        return self.SECRET_DIR
+
+    @property
     def task_database_id(self):
         return self.TASK_DATABASE_ID
 
     @property
     def url_root(self):
         return self.URL_ROOT
-
-    @property
-    def gtoken_fp(self):
-        return "secrets/token.pkl"
 
     @property
     def timezone(self):

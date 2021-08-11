@@ -1,22 +1,20 @@
-import os
-from notion_client import Client
 from datetime import datetime, timedelta, date
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-import pickle
+
 import logging
 
 from config_parser import  ConfigParser
+from client import GoogleClient
+from client import NotionClient
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 log = logging.getLogger(__name__)
 
 ConfigParser().initialize("config.ini")
-
-runScript = "python3 GCalToken.py"
-
-
-
+gc = GoogleClient()
+gc.auth()
+nc = NotionClient()
+nc.auth()
+notion = nc._service
 
 Task_Notion_Name = 'Task'
 Date_Notion_Name = 'Date'
@@ -46,17 +44,6 @@ def googleQuery():
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")+"-04:00" #Change the last 5 characters to be representative of your timezone
      #^^ has to be adjusted for when daylight savings is different if your area observes it
 
-
-
-
-
-
-
-
-
-
-
-
 ##### DATABASE SPECIFIC EDITS
 
 # There needs to be a few properties on the Notion Database for this to work. Replace the values of each variable with the string of what the variable is called on your Notion dashboard
@@ -74,53 +61,9 @@ calendarDictionary = {
 ###               No additional user editing beyond this point is needed            ###
 #######################################################################################
 
+calendar = gc._service.calendars().get(calendarId=ConfigParser().default_gcal_id).execute()
 
 
-
-#SET UP THE GOOGLE CALENDAR API INTERFACE
-
-credentials = pickle.load(open(ConfigParser().gtoken_fp, "rb"))
-service = build("calendar", "v3", credentials=credentials)
-
-
-#There could be a hiccup if the Google Calendar API token expires.
-#If the token expires, the other python script GCalToken.py creates a new token for the program to use
-#This is placed here because it can take a few seconds to start working and I want the most heavy tasks to occur first
-try:
-    calendar = service.calendars().get(calendarId=ConfigParser().default_gcal_id).execute()
-except:
-    #refresh the token
-    import os
-    os.system(runScript)
-
-    #SET UP THE GOOGLE CALENDAR API INTERFACE
-
-    credentials = pickle.load(open(ConfigParser().gtoken_fp, "rb"))
-    service = build("calendar", "v3", credentials=credentials)
-
-    # result = service.calendarList().list().execute()
-    # log.info(result['items'][:])
-
-    calendar = service.calendars().get(calendarId=ConfigParser().default_gcal_id).execute()
-
-
-
-notion = Client(auth=ConfigParser().notion_token)
-
-
-
-
-
-###########################################################################
-##### The Methods that we will use in this scipt are below
-###########################################################################
-
-
-######################################################################
-#METHOD TO MAKE A CALENDAR EVENT DESCRIPTION
-
-#This method can be edited as wanted. Whatever is returned from this method will be in the GCal event description
-#Whatever you change up, be sure to return a string
 
 def makeEventDescription(initiative, info):
     if initiative == '' and info == '':
@@ -241,7 +184,7 @@ def makeCalEvent(eventName, eventDescription, eventStartTime, sourceURL, eventEn
     log.info('Adding this event to calendar: ', eventName)
 
     log.info(event)
-    x = service.events().insert(calendarId=calId, body=event).execute()
+    x = gc._service.events().insert(calendarId=calId, body=event).execute()
     return x['id']
 
 
@@ -341,15 +284,15 @@ def upDateCalEvent(eventName, eventDescription, eventStartTime, sourceURL, event
     log.info('Updating this event to calendar: ', eventName)
 
     if currentCalId == CalId:
-        x = service.events().update(calendarId=CalId, eventId = eventId, body=event).execute()
+        x = gc._service.events().update(calendarId=CalId, eventId = eventId, body=event).execute()
 
     else: #When we have to move the event to a new calendar. We must move the event over to the new calendar and then update the information on the event
         log.info('Event ' + eventId)
         log.info('CurrentCal ' + currentCalId)
         log.info('NewCal ' + CalId)
-        x= service.events().move(calendarId= currentCalId , eventId= eventId, destination=CalId).execute()
+        x= gc._service.events().move(calendarId= currentCalId , eventId= eventId, destination=CalId).execute()
         log.info('New event id: ' + x['id'])
-        x = service.events().update(calendarId=CalId, eventId = eventId, body=event).execute()
+        x = gc._service.events().update(calendarId=CalId, eventId = eventId, body=event).execute()
 
     return x['id']
 
@@ -885,7 +828,7 @@ for gCalId in notion_gCal_IDs:
     for calendarID in calendarDictionary.keys(): #just check all of the calendars of interest for info about the event
         log.info('Trying ' + calendarID + ' for ' + gCalId)
         try:
-            x = service.events().get(calendarId=calendarDictionary[calendarID], eventId = gCalId).execute()
+            x = gc._service.events().get(calendarId=calendarDictionary[calendarID], eventId = gCalId).execute()
         except:
             log.info('Event not found')
             x = {'status': 'unconfirmed'}
@@ -1219,7 +1162,7 @@ for result in resultList:
 
 events = []
 for el in calendarDictionary.keys(): #get all the events from all calendars of interest
-    x = service.events().list(calendarId = calendarDictionary[el], maxResults = 2000, timeMin = googleQuery() ).execute()
+    x = gc._service.events().list(calendarId = calendarDictionary[el], maxResults = 2000, timeMin = googleQuery() ).execute()
     events.extend(x['items'])
 
 log.info(events)
@@ -1534,7 +1477,7 @@ if ConfigParser().delete_option == 0 and len(resultList) > 0: #delete gCal event
         log.info(calendarID, eventId)
 
         try:
-            service.events().delete(calendarId=calendarID, eventId=eventId).execute()
+            gc._service.events().delete(calendarId=calendarID, eventId=eventId).execute()
         except:
             continue
 
