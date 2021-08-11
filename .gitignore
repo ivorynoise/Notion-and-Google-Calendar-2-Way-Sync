@@ -2,7 +2,7 @@
 .env
 venv/
 .vscode/
+.idea/
 
 # other credentials
-client_secret.json
-token.pkl
+secrets/
