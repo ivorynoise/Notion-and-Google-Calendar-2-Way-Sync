@@ -58,6 +58,7 @@ class ConfigParser(metaclass=Singleton):
 
     @property
     def notion_token(self):
+        # use decorator to check for self.initalised
         return self.NOTION_TOKEN
 
     @property
