@@ -10,24 +10,10 @@ from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
-
-Task_Notion_Name = 'Task'
-Date_Notion_Name = 'Date'
-Initiative_Notion_Name = 'Initiative'
-ExtraInfo_Notion_Name = 'Extra Info'
-On_GCal_Notion_Name = 'On GCal?'
-NeedGCalUpdate_Notion_Name = 'NeedGCalUpdate'
-GCalEventId_Notion_Name = 'GCal Event Id'
-LastUpdatedTime_Notion_Name  = 'Last Updated Time'
-Calendar_Notion_Name = 'Calendar'
-Current_Calendar_Id_Notion_Name = 'Current Calendar Id'
-Delete_Notion_Name = 'Done?'
-
-
 class Event:
     def __init__(self, json, calid, timezone, *args, **kwargs):
         # super().__init__()
-        self.cal_id = calid
+        self.cal_id: str = calid
         self.cal_name = kwargs.get("cal_name", "???")
         self.timezone = timezone
         self.all_day_event = ""
@@ -41,6 +27,7 @@ class Event:
         self.start = parse(glom(json, "start.dateTime")).replace(second=0, microsecond=0)
         self.end = parse(glom(json, "end.dateTime")).replace(second=0, microsecond=0)
         self.src_url = glom(json, "source.url", default="")
+        self.previous: str = glom(json, "extendedProperties.shared.previousCalId", default=self.cal_id)
 
     def __repr__(self):
         return f"<GTask:{self.title}|{self.start}|{self.end}|" \
@@ -66,6 +53,11 @@ class Event:
             'source': {
                 'title': 'Notion Link',
                 'url': self.src_url,
+            },
+            "extendedProperties": {
+                "shared": {
+                    "previousCalId": self.previous
+                }
             }
         }
         return event
@@ -156,7 +148,7 @@ class Task:
     def _id(self):
         return self.task_id.replace("-", "")
 
-    def to_event(self):
+    def to_event(self, cal_id):
         event = {
             'summary': self.title,
             'start': {
@@ -168,6 +160,11 @@ class Task:
             'source': {
                 'title': 'Notion Link',
                 'url': self.src_url,
+            },
+            "extendedProperties": {
+                "shared": {
+                    "previousCalId": cal_id
+                }
             }
         }
         return event

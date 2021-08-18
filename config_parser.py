@@ -14,15 +14,10 @@ class ConfigParser(metaclass=Singleton):
 
         self.NOTION_TOKEN = ""
         self.TASK_DATABASE_ID = ""
-        self.URL_ROOT = ""
         self.SECRET_DIR = ""
-        self.TIMEZONE = ""
         self.DEFAULT_EVENT_LENGTH = ""
         self.DEFAULT_START_TIME = ""
-        self.ALL_DAY_EVENT = ""
-        self.DELETE_OPTION = ""
-        self.DEFAULT_GCALENDAR_ID =""
-        self.DEFAULT_GCALENDAR_NAME =""
+        self._calendars = {}
 
     def initialize(self, fp):
         config = configparser.ConfigParser()
@@ -33,19 +28,17 @@ class ConfigParser(metaclass=Singleton):
         notion_cfg = config['NOTION']
         self.NOTION_TOKEN = notion_cfg['NOTION_TOKEN']
         self.TASK_DATABASE_ID = notion_cfg['TASK_DATABASE_ID']
-        self.URL_ROOT = notion_cfg['URL_ROOT']
 
         google_cfg = config['GOOGLE']
         self.SECRET_DIR = google_cfg['SECRET_DIR']
+        self.DEFAULT_EVENT_LENGTH = google_cfg['DEFAULT_EVENT_LENGTH']
+        self.DEFAULT_START_TIME = google_cfg['DEFAULT_START_TIME']
 
-        other_cfg = config['OTHERS']
-        self.TIMEZONE = other_cfg['TIMEZONE']
-        self.DEFAULT_EVENT_LENGTH = other_cfg['DEFAULT_EVENT_LENGTH']
-        self.DEFAULT_START_TIME = other_cfg['DEFAULT_START_TIME']
-        self.ALL_DAY_EVENT = other_cfg['ALL_DAY_EVENT']
-        self.DELETE_OPTION = other_cfg['DELETE_OPTION']
-        self.DEFAULT_GCALENDAR_ID = other_cfg['DEFAULT_GCALENDAR_ID']
-        self.DEFAULT_GCALENDAR_NAME = other_cfg['DEFAULT_GCALENDAR_NAME']
+        calendars_cfg = config['GOOGLE\\CALENDARS']
+        self._calendars = {
+            "default": calendars_cfg['DEFAULT_GCALENDAR_ID'],
+            "completed": calendars_cfg['COMPLETED_GCALENDAR_ID']
+        }
 
         self._initialized = True
 
@@ -58,7 +51,7 @@ class ConfigParser(metaclass=Singleton):
 
     @property
     def notion_token(self):
-        # use decorator to check for self.initalised
+        # use decorator to check for self.initialised
         return self.NOTION_TOKEN
 
     @property
@@ -70,33 +63,9 @@ class ConfigParser(metaclass=Singleton):
         return self.TASK_DATABASE_ID
 
     @property
-    def url_root(self):
-        return self.URL_ROOT
-
-    @property
-    def timezone(self):
-        return self.TIMEZONE
-
-    @property
-    def default_event_length(self):
-        return self.DEFAULT_EVENT_LENGTH
-
-    @property
     def default_start_time(self):
         return self.DEFAULT_START_TIME
 
     @property
-    def all_day_event(self):
-        return self.ALL_DAY_EVENT
-
-    @property
-    def delete_option(self):
-        return self.DELETE_OPTION
-
-    @property
-    def default_gcal_id(self):
-        return self.DEFAULT_GCALENDAR_ID
-
-    @property
-    def default_gcal_name(self):
-        return self.DEFAULT_GCALENDAR_NAME
+    def calendars(self):
+        return self._calendars

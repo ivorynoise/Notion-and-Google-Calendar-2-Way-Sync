@@ -55,9 +55,9 @@ class GoogleClient(Client, metaclass=Singleton):
     def create_event(self, cal_id, task: Task):
         log.debug(f"Creating new event cal_id:{cal_id}, summary:{task.title}")
         return self._service.events().insert(calendarId=cal_id,
-                                             body=task.to_event()).execute()
+                                             body=task.to_event(cal_id)).execute()
 
-    def update_event(self, cal_id, event:Event):
+    def update_event(self, cal_id, event: Event):
         log.debug(f"Updating event cal_id:{cal_id}, summary:{event.title}")
         return self._service.events().patch(calendarId=cal_id, eventId=event._id,
                                             body=event.to_json()).execute()
@@ -66,6 +66,9 @@ class GoogleClient(Client, metaclass=Singleton):
         log.debug(f"deleting event cal_id:{cal_id}, summary:{event.title}")
         self._service.events().delete(calendarId=cal_id, eventId=event._id).execute()
 
+    def move_event(self, event: Event, src_calid, dest_calid):
+        log.debug(f"moving event cal_id:{src_calid} -> {dest_calid}, summary:{event.title}")
+        self._service.events().move(calendarId=src_calid, eventId=event._id, destination=dest_calid).execute()
 
 
 class NotionClient(Client, metaclass=Singleton):
