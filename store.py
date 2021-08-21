@@ -208,7 +208,7 @@ class NDb:
     def create_events_for_tasks(self):
         tasks_created = []
         for tsk in self.idToTask.values():
-            if tsk.scheduled and not tsk.gevnt_id:
+            if tsk.scheduled and not tsk.gevnt_id and tsk.completed is False:
                 tasks_created.append(tsk)
         log.info(f"Events to create, {len(tasks_created)}")
 
@@ -244,6 +244,7 @@ class NDb:
 
     def update_events_for_tasks(self):
         update_events = []
+        """TODO: change it to multicalendar"""
         for event in cals.default.notion_events():
             event = self.idToTask[event.notion_id].compare(event)
             if event is not None:

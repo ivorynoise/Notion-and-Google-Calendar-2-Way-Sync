@@ -116,7 +116,7 @@ class Event:
 
 
 class Task:
-    default_date = datetime.now(tzlocal()).isoformat('T')
+    default_date = datetime.now(tzlocal())
 
     def __init__(self, json, db_id):
         super().__init__()
@@ -132,14 +132,17 @@ class Task:
         self.gevnt_id = glom(n_properties, ("GCal Event Id.rich_text", [T], T[0], 'plain_text'), default="")
         self.completed = glom(n_properties, "Done?.checkbox", default=False)
 
-        self.start = glom(n_properties, "Date.date.start", default=self.default_date)
-        self.end = glom(n_properties, "Date.date.end", default=self.default_date)
-        if not self.start:  # can be JS null -> None
+        self.start: datetime = glom(n_properties, "Date.date.start", default=self.default_date.isoformat('T'))
+        self.end: datetime = glom(n_properties, "Date.date.end", default=self.default_date.isoformat('T'))
+        if not self.start:
             self.start = self.default_date
         if not self.end:
             self.end = self.start
         self.start = parse(self.start).replace(second=0, microsecond=0)
         self.end = parse(self.end).replace(second=0, microsecond=0)
+        if not self.start.tzinfo or not self.start.utcoffset():
+            self.start = datetime.combine(self.start.date(), self.default_date.time(), tzinfo=tzlocal())
+            self.end = datetime.combine(self.end.date(), self.default_date.time(), tzinfo=tzlocal())
 
     def __repr__(self):
         return f"<Ntask:{self._id}|{self.title}|{self.last_updated}|{self.start}|{self.end}"
@@ -218,5 +221,4 @@ class Task:
             event.start = self.start
             event.end = self.end
             return event
-
         return None
