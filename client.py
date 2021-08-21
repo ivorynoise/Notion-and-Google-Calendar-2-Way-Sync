@@ -1,5 +1,6 @@
 import os.path
 import logging
+from glom import  glom
 from googleapiclient.discovery import build, Resource
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -79,21 +80,15 @@ class NotionClient(Client, metaclass=Singleton):
         self._service = NClient(auth=ConfigParser().notion_token)
 
     def get_tasks(self, db_id) -> []:
+        # first page
         json = self._service.databases.query(
             database_id=db_id,
-            # **{
-            #     "filter": {
-            #         "and": [
-            #             {
-            #                 "property": "On GCal?",
-            #                 "checkbox": {
-            #                     "equals": False
-            #                 }
-            #             }
-            #         ]
-            #     }
-            # }
         )
+        next_cursor = glom(json, 'next_cursor', default=None)
+        while next_cursor is not None:
+            next_json = self._service.databases.query(database_id=db_id, start_cursor=next_cursor)
+            json["results"].extend(next_json["results"])
+            next_cursor = glom(next_json, 'next_cursor', default=None)
         return json
 
     def get_updated_tasks(self, db_id):

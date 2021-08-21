@@ -223,6 +223,7 @@ class NDb:
 
     def delete_events_for_tasks(self):
         """Deletes event in default calendar if the corresponding task in notion is deleted"""
+        # TODO: delete unscheduled event
         del_events = []
         tasks_updated = []
         for event in cals.default.notion_events():
